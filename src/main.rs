@@ -1,7 +1,10 @@
+mod appstate;
 mod feedback;
-mod request;
 
-use std::net::SocketAddr;
+use std::{
+    net::SocketAddr,
+    sync::{Arc, RwLock},
+};
 
 use axum::{
     routing::{get, post},
@@ -10,13 +13,21 @@ use axum::{
 
 use feedback::create_request;
 
+use crate::{appstate::AppState, feedback::get_feedback_requests};
+
+type SharedState = Arc<RwLock<AppState>>;
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
+    let state = Arc::new(RwLock::new(AppState::new()));
+
     let app = Router::new()
         .route("/", get(root))
-        .route("/feedback/new", post(create_request));
+        .route("/feedback/all", get(get_feedback_requests))
+        .route("/feedback/new", post(create_request))
+        .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
