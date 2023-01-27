@@ -1,12 +1,14 @@
+mod feedback;
+mod request;
+
 use std::net::SocketAddr;
 
 use axum::{
-    http::StatusCode,
-    response::IntoResponse,
     routing::{get, post},
-    Form, Json, Router,
+    Router,
 };
-use serde::{Deserialize, Serialize};
+
+use feedback::create_request;
 
 #[tokio::main]
 async fn main() {
@@ -28,36 +30,4 @@ async fn main() {
 
 async fn root() -> &'static str {
     "Hello world"
-}
-
-#[derive(Serialize, Deserialize)]
-struct CreateRequest {
-    title: String,
-    category: String,
-    description: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Request {
-    id: u32,
-    title: String,
-    category: String,
-    upvotes: u32,
-    status: String,
-    description: String,
-    comments: Option<String>,
-}
-
-async fn create_request(Form(payload): Form<CreateRequest>) -> impl IntoResponse {
-    let new_request = Request {
-        id: 1,
-        title: payload.title,
-        category: payload.category,
-        upvotes: 0,
-        status: String::from("suggestion"),
-        description: payload.description,
-        comments: None,
-    };
-
-    (StatusCode::CREATED, Json(new_request))
 }
