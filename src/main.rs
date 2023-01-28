@@ -1,4 +1,5 @@
 mod appstate;
+mod comment;
 mod feedback;
 
 use std::{
@@ -15,7 +16,8 @@ use feedback::create_request;
 
 use crate::{
     appstate::AppState,
-    feedback::{edit_request, get_feedback_requests, get_request},
+    comment::{create_comment, create_reply},
+    feedback::{edit_request, get_feedback_requests, get_request, upvote_request},
 };
 
 type SharedState = Arc<RwLock<AppState>>;
@@ -32,6 +34,9 @@ async fn main() {
         .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
         .route("/feedback/:id/edit", patch(edit_request))
+        .route("/feedback/:id/upvote", post(upvote_request))
+        .route("/feedback/:id/comment", post(create_comment))
+        .route("/comments/:id/reply", post(create_reply))
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));

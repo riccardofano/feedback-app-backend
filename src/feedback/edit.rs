@@ -12,6 +12,7 @@ use crate::SharedState;
 pub struct EditForm {
     title: String,
     category: String,
+    status: String,
     description: String,
 }
 
@@ -21,10 +22,10 @@ pub async fn edit_request(
     Form(form): Form<EditForm>,
 ) -> impl IntoResponse {
     let mut state = state.write().unwrap();
-    let request = state.edit_request(id, form.title, form.category, form.description);
+    let request = state.edit_request(id, form.title, form.category, form.status, form.description);
 
     match request {
-        Ok(r) => (StatusCode::OK, Json(Some(r.clone()))),
+        Ok(r) => (StatusCode::OK, Json(Some(r))),
         Err(_) => (StatusCode::NOT_FOUND, Json(None)),
     }
 }

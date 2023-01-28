@@ -16,7 +16,7 @@ pub struct Request {
     id: usize,
     title: String,
     category: String,
-    upvotes: usize,
+    upvotes: isize,
     upvoted: bool,
     status: String,
     description: String,
@@ -40,35 +40,47 @@ impl Request {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ComposedRequest {
-    id: usize,
-    title: String,
-    category: String,
-    upvotes: usize,
-    upvoted: bool,
-    status: String,
-    description: String,
-    comments: Vec<ComposedComment>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ComposedComment {
-    id: usize,
-    content: String,
-    replying_to: Option<String>,
-    user: User,
-    replies: Vec<ComposedComment>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Comment {
     id: usize,
     content: String,
     replying_to: Option<String>,
     user: String,
     replies: Vec<usize>,
+}
+
+impl Comment {
+    pub fn new(id: usize, user: String, content: String, to: Option<String>) -> Self {
+        Self {
+            id,
+            user,
+            content,
+            replying_to: to,
+            replies: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ComposedRequest {
+    id: usize,
+    pub title: String,
+    pub category: String,
+    pub upvotes: isize,
+    pub upvoted: bool,
+    pub status: String,
+    pub description: String,
+    pub comments: Vec<ComposedComment>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ComposedComment {
+    id: usize,
+    pub content: String,
+    pub replying_to: Option<String>,
+    pub user: User,
+    pub replies: Vec<ComposedComment>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -557,6 +569,10 @@ impl AppState {
         self.product_requests.get(&id).unwrap().clone()
     }
 
+    fn get_mut_request_by_id(&mut self, id: usize) -> &mut Request {
+        self.product_requests.get_mut(&id).unwrap()
+    }
+
     pub fn get_request(&self, id: usize) -> Result<ComposedRequest, String> {
         let request = self.get_request_by_id(id);
         let request = self.compose_request(request);
@@ -564,11 +580,27 @@ impl AppState {
         Ok(request)
     }
 
+    pub fn upvote_request(&mut self, id: usize) -> Result<ComposedRequest, String> {
+        let mut request = self
+            .product_requests
+            .get_mut(&id)
+            .ok_or(format!("could not find request with id {id}"))?;
+
+        request.upvotes += if request.upvoted { -1 } else { 1 };
+        request.upvoted = !request.upvoted;
+
+        let request = request.clone();
+        let composed = self.compose_request(request);
+
+        Ok(composed)
+    }
+
     pub fn edit_request(
         &mut self,
         id: usize,
         title: String,
         category: String,
+        status: String,
         description: String,
     ) -> Result<ComposedRequest, String> {
         let mut request = self
@@ -578,12 +610,44 @@ impl AppState {
 
         request.title = title;
         request.category = category;
+        request.status = status;
         request.description = description;
 
         let request = request.clone();
         let composed = self.compose_request(request);
 
         Ok(composed)
+    }
+
+    pub fn new_comment(
+        &mut self,
+        request_id: usize,
+        username: String,
+        content: String,
+    ) -> ComposedComment {
+        let comment = Comment::new(self._next_comment_id(), username, content, None);
+        let request = self.get_mut_request_by_id(request_id);
+
+        request.comments.push(comment.id);
+        self.comments.insert(comment.id, comment.clone());
+
+        self.compose_replies(&comment)
+    }
+
+    pub fn new_reply(
+        &mut self,
+        comment_id: usize,
+        username: String,
+        content: String,
+        to: String,
+    ) -> ComposedComment {
+        let reply = Comment::new(self._next_comment_id(), username, content, Some(to));
+        let comment = self.comments.get_mut(&comment_id).unwrap();
+
+        comment.replies.push(reply.id);
+        self.comments.insert(reply.id, reply.clone());
+
+        self.compose_replies(&reply)
     }
 
     pub fn get_current_user(&self) -> &User {
