@@ -7,7 +7,7 @@ use std::{
 };
 
 use axum::{
-    routing::{get, post},
+    routing::{get, patch, post},
     Router,
 };
 
@@ -15,7 +15,7 @@ use feedback::create_request;
 
 use crate::{
     appstate::AppState,
-    feedback::{get_feedback_requests, get_request},
+    feedback::{edit_request, get_feedback_requests, get_request},
 };
 
 type SharedState = Arc<RwLock<AppState>>;
@@ -31,6 +31,7 @@ async fn main() {
         .route("/feedback/all", get(get_feedback_requests))
         .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
+        .route("/feedback/:id/edit", patch(edit_request))
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));

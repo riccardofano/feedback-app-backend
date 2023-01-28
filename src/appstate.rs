@@ -541,7 +541,7 @@ impl AppState {
         self.last_request_id
     }
 
-    fn next_comment_id(&mut self) -> usize {
+    fn _next_comment_id(&mut self) -> usize {
         self.last_comment_id += 1;
         self.last_comment_id
     }
@@ -570,8 +570,8 @@ impl AppState {
         title: String,
         category: String,
         description: String,
-    ) -> Result<(), String> {
-        let request = self
+    ) -> Result<ComposedRequest, String> {
+        let mut request = self
             .product_requests
             .get_mut(&id)
             .ok_or(format!("could not find request with id {id}"))?;
@@ -580,7 +580,10 @@ impl AppState {
         request.category = category;
         request.description = description;
 
-        Ok(())
+        let request = request.clone();
+        let composed = self.compose_request(request);
+
+        Ok(composed)
     }
 
     pub fn get_current_user(&self) -> &User {
