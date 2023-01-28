@@ -13,7 +13,10 @@ use axum::{
 
 use feedback::create_request;
 
-use crate::{appstate::AppState, feedback::get_feedback_requests};
+use crate::{
+    appstate::AppState,
+    feedback::{get_feedback_requests, get_request},
+};
 
 type SharedState = Arc<RwLock<AppState>>;
 
@@ -21,15 +24,16 @@ type SharedState = Arc<RwLock<AppState>>;
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let state = Arc::new(RwLock::new(AppState::new()));
+    let state = Arc::new(RwLock::new(AppState::seeded()));
 
     let app = Router::new()
         .route("/", get(root))
         .route("/feedback/all", get(get_feedback_requests))
         .route("/feedback/new", post(create_request))
+        .route("/feedback/:id", get(get_request))
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
 
     tracing::info!("listening on {addr}");
 
