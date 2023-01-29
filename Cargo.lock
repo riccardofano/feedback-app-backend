@@ -755,6 +755,7 @@ dependencies = [
  "serde_json",
  "shuttle-service",
  "sync_wrapper",
+ "tower-http",
  "tracing",
  "tracing-subscriber",
 ]
