@@ -2,10 +2,7 @@ mod appstate;
 mod comment;
 mod feedback;
 
-use std::{
-    net::SocketAddr,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 use axum::{
     routing::{get, patch, post},
@@ -13,6 +10,7 @@ use axum::{
 };
 
 use feedback::create_request;
+use sync_wrapper::SyncWrapper;
 
 use crate::{
     appstate::AppState,
@@ -22,10 +20,8 @@ use crate::{
 
 type SharedState = Arc<RwLock<AppState>>;
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt::init();
-
+#[shuttle_service::main]
+async fn axum() -> shuttle_service::ShuttleAxum {
     let state = Arc::new(RwLock::new(AppState::seeded()));
 
     let app = Router::new()
@@ -39,14 +35,9 @@ async fn main() {
         .route("/comments/:id/reply", post(create_reply))
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
+    let sync_wrapper = SyncWrapper::new(app);
 
-    tracing::info!("listening on {addr}");
-
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("could not start server");
+    Ok(sync_wrapper)
 }
 
 async fn root() -> &'static str {
