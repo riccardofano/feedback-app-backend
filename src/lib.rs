@@ -1,6 +1,7 @@
 mod appstate;
 mod comment;
 mod feedback;
+mod validation;
 
 use std::sync::{Arc, RwLock};
 
