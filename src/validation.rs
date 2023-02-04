@@ -1,13 +1,16 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use axum::{
     extract::{rejection::FormRejection, FromRequest},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
-    Form,
+    Form, Json,
 };
 use serde::de::DeserializeOwned;
+use serde_json::json;
 use thiserror::Error;
-use validator::Validate;
+use validator::{Validate, ValidationErrors};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ValidatedForm<T>(pub T);
@@ -41,12 +44,29 @@ pub enum ServerError {
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
         match self {
-            ServerError::ValidationError(_) => {
-                let message = format!("Input validation error: [{}]", self).replace('\n', ", ");
-                (StatusCode::BAD_REQUEST, message)
-            }
-            ServerError::AxumFormRejection(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ServerError::ValidationError(validation_errors) => (
+                StatusCode::BAD_REQUEST,
+                Json(json!(get_validation_field_errors(validation_errors))),
+            ),
+            ServerError::AxumFormRejection(_) => (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "rejected": self.to_string() })),
+            ),
         }
         .into_response()
     }
+}
+
+fn get_validation_field_errors(validation_errors: ValidationErrors) -> HashMap<String, String> {
+    validation_errors
+        .field_errors()
+        .iter()
+        .map(|(&field, &errors)| {
+            let first_error = match errors.first() {
+                Some(e) => e.message.as_ref().map_or("Something went wrong", |m| m),
+                None => "Something went wrong",
+            };
+            (field.to_string(), first_error.to_string())
+        })
+        .collect()
 }

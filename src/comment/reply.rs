@@ -2,23 +2,29 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    Form, Json,
+    Json,
 };
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
-use crate::SharedState;
+use crate::{validation::ValidatedForm, SharedState};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Validate, Serialize, Deserialize)]
 pub struct CreateComment {
     username: String,
     to: String,
+    #[validate(length(
+        min = 1,
+        max = 250,
+        message = "Content must be between 1 and 250 characters long"
+    ))]
     content: String,
 }
 
 pub async fn create_reply(
     Path(comment_id): Path<usize>,
     State(state): State<SharedState>,
-    Form(payload): Form<CreateComment>,
+    ValidatedForm(payload): ValidatedForm<CreateComment>,
 ) -> impl IntoResponse {
     let mut state = state.write().unwrap();
     let new_comment = state.new_reply(comment_id, payload.username, payload.content, payload.to);

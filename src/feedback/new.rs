@@ -1,18 +1,21 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Form, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
-use crate::SharedState;
+use crate::{validation::ValidatedForm, SharedState};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Validate, Serialize, Deserialize)]
 pub struct CreateRequest {
+    #[validate(length(min = 3, message = "Must be at least 3 characters long"))]
     title: String,
     category: String,
+    #[validate(length(min = 10, message = "Must be at least 10 characters long"))]
     description: String,
 }
 
 pub async fn create_request(
     State(state): State<SharedState>,
-    Form(payload): Form<CreateRequest>,
+    ValidatedForm(payload): ValidatedForm<CreateRequest>,
 ) -> impl IntoResponse {
     let new_request =
         state

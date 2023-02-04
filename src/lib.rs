@@ -13,7 +13,11 @@ use axum::{
 
 use feedback::create_request;
 use sync_wrapper::SyncWrapper;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::{self, TraceLayer},
+};
+use tracing::Level;
 
 use crate::{
     appstate::AppState,
@@ -40,7 +44,14 @@ async fn axum() -> shuttle_service::ShuttleAxum {
         .route("/feedback/:id/comment", post(create_comment))
         .route("/comments/:id/reply", post(create_reply))
         .with_state(state)
-        .layer(cors);
+        .layer(cors)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO))
+                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
+                .on_failure(trace::DefaultOnFailure::new().level(Level::ERROR)),
+        );
 
     let sync_wrapper = SyncWrapper::new(app);
 

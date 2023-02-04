@@ -9,16 +9,17 @@ use validator::Validate;
 
 use crate::{validation::ValidatedForm, SharedState};
 
-#[derive(Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize)]
 pub struct EditForm {
-    #[validate(length(min = 3))]
+    #[validate(length(min = 3, message = "Must be at least 3 characters long"))]
     title: String,
     category: String,
     status: String,
-    #[validate(length(min = 10))]
+    #[validate(length(min = 10, message = "Must be at least 10 characters long"))]
     description: String,
 }
 
+#[tracing::instrument]
 pub async fn edit_request(
     Path(id): Path<usize>,
     State(state): State<SharedState>,

@@ -3,6 +3,7 @@ use serde_json::json;
 
 use crate::SharedState;
 
+#[tracing::instrument(name = "feedback/all")]
 pub async fn get_feedback_requests(State(state): State<SharedState>) -> impl IntoResponse {
     let state = state.read().unwrap().clone();
     let current_user = state.get_current_user();

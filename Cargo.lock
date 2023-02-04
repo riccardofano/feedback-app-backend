@@ -804,7 +804,6 @@ dependencies = [
  "thiserror",
  "tower-http",
  "tracing",
- "tracing-subscriber",
  "validator",
 ]
 
@@ -1159,6 +1158,7 @@ dependencies = [
  "tower",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
