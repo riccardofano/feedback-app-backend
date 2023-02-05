@@ -63,8 +63,8 @@ fn get_validation_field_errors(validation_errors: ValidationErrors) -> HashMap<S
         .iter()
         .map(|(&field, &errors)| {
             let first_error = match errors.first() {
-                Some(e) => e.message.as_ref().map_or("Something went wrong", |m| m),
-                None => "Something went wrong",
+                Some(e) if e.message.is_some() => e.message.as_ref().unwrap().as_ref(),
+                Some(_) | None => "Something went wrong",
             };
             (field.to_string(), first_error.to_string())
         })

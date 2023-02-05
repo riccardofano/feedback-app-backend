@@ -689,6 +689,7 @@ impl AppState {
             }
         }
 
+        // TODO: return a 400 if username is not found
         let user = self.users.get(&comment.user).unwrap().clone();
 
         ComposedComment {
