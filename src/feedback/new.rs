@@ -6,10 +6,10 @@ use crate::{validation::ValidatedForm, SharedState};
 
 #[derive(Validate, Serialize, Deserialize)]
 pub struct CreateRequest {
-    #[validate(length(min = 3, message = "Must be at least 3 characters long"))]
+    #[validate(length(min = 3))]
     title: String,
     category: String,
-    #[validate(length(min = 10, message = "Must be at least 10 characters long"))]
+    #[validate(length(min = 10))]
     description: String,
 }
 

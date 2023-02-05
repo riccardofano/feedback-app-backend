@@ -12,11 +12,7 @@ use crate::{validation::ValidatedForm, SharedState};
 #[derive(Validate, Serialize, Deserialize)]
 pub struct CreateComment {
     username: String,
-    #[validate(length(
-        min = 1,
-        max = 250,
-        message = "Content must be between 1 and 250 characters long"
-    ))]
+    #[validate(length(min = 1, max = 250))]
     content: String,
 }
 

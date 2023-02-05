@@ -10,7 +10,7 @@ use axum::{
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use thiserror::Error;
-use validator::{Validate, ValidationErrors};
+use validator::{Validate, ValidationError, ValidationErrors};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ValidatedForm<T>(pub T);
@@ -63,10 +63,49 @@ fn get_validation_field_errors(validation_errors: ValidationErrors) -> HashMap<S
         .iter()
         .map(|(&field, &errors)| {
             let first_error = match errors.first() {
-                Some(e) if e.message.is_some() => e.message.as_ref().unwrap().as_ref(),
-                Some(_) | None => "Something went wrong",
+                Some(e) => create_error_message(e),
+                None => "Something went wrong".into(),
             };
-            (field.to_string(), first_error.to_string())
+            (field.to_string(), first_error)
         })
         .collect()
+}
+
+fn create_error_message(error: &ValidationError) -> String {
+    if error.message.is_some() {
+        return error.message.as_ref().unwrap().to_string();
+    }
+
+    match error.code.as_ref() {
+        "email" => "Must be a valid email address".into(),
+        "url" => "Must be a valid URL".into(),
+        "length" => match_range(&error) + " characters long",
+        "range" => match_range(&error),
+        "credit_card" => "Must be a valid credit card number".into(),
+        "phone" => "Must be a valid phone number".into(),
+        "required" => "This field is required".into(),
+        _ => "Something went wrong".into(),
+    }
+}
+
+fn match_range(error: &ValidationError) -> String {
+    let mut params: Vec<&str> = error
+        .params
+        .keys()
+        .map(|k| k.as_ref())
+        .filter(|k| k != &"value")
+        .collect();
+    params.sort();
+
+    match params[..] {
+        ["max", "min"] => format!(
+            "Must be between {} and {}",
+            error.params.get("min").unwrap(),
+            error.params.get("max").unwrap()
+        ),
+        ["max"] => format!("Must be at most {}", error.params.get("max").unwrap()),
+        ["min"] => format!("Must be at least {}", error.params.get("min").unwrap()),
+        ["equal"] => format!("Must be {}", error.params.get("equal").unwrap()),
+        _ => "Something went wrong".into(),
+    }
 }
