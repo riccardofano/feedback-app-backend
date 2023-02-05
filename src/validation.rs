@@ -62,33 +62,36 @@ fn get_validation_field_errors(validation_errors: ValidationErrors) -> HashMap<S
         .field_errors()
         .iter()
         .map(|(&field, &errors)| {
-            let first_error = match errors.first() {
-                Some(e) => create_error_message(e),
-                None => "Something went wrong".into(),
-            };
-            (field.to_string(), first_error)
+            if let Some(first_error) = errors.first() {
+                if let Some(message) = create_error_message(first_error) {
+                    return (field.to_string(), message);
+                }
+            }
+            (field.to_string(), "Something went wrong".into())
         })
         .collect()
 }
 
-fn create_error_message(error: &ValidationError) -> String {
+fn create_error_message(error: &ValidationError) -> Option<String> {
     if error.message.is_some() {
-        return error.message.as_ref().unwrap().to_string();
+        return Some(error.message.as_ref().unwrap().to_string());
     }
 
-    match error.code.as_ref() {
+    let res = match error.code.as_ref() {
         "email" => "Must be a valid email address".into(),
         "url" => "Must be a valid URL".into(),
-        "length" => match_range(&error) + " characters long",
-        "range" => match_range(&error),
+        "length" => match_range(&error)? + " characters long",
+        "range" => match_range(&error)?,
         "credit_card" => "Must be a valid credit card number".into(),
         "phone" => "Must be a valid phone number".into(),
         "required" => "This field is required".into(),
-        _ => "Something went wrong".into(),
-    }
+        _ => return None,
+    };
+
+    Some(res)
 }
 
-fn match_range(error: &ValidationError) -> String {
+fn match_range(error: &ValidationError) -> Option<String> {
     let mut params: Vec<&str> = error
         .params
         .keys()
@@ -97,7 +100,7 @@ fn match_range(error: &ValidationError) -> String {
         .collect();
     params.sort();
 
-    match params[..] {
+    let res = match params[..] {
         ["max", "min"] => format!(
             "Must be between {} and {}",
             error.params.get("min").unwrap(),
@@ -106,6 +109,8 @@ fn match_range(error: &ValidationError) -> String {
         ["max"] => format!("Must be at most {}", error.params.get("max").unwrap()),
         ["min"] => format!("Must be at least {}", error.params.get("min").unwrap()),
         ["equal"] => format!("Must be {}", error.params.get("equal").unwrap()),
-        _ => "Something went wrong".into(),
-    }
+        _ => return None,
+    };
+
+    Some(res)
 }
