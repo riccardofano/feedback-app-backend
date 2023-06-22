@@ -12,7 +12,6 @@ use axum::{
 };
 
 use feedback::create_request;
-use sync_wrapper::SyncWrapper;
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::{self, TraceLayer},
@@ -27,8 +26,8 @@ use crate::{
 
 type SharedState = Arc<RwLock<AppState>>;
 
-#[shuttle_service::main]
-async fn axum() -> shuttle_service::ShuttleAxum {
+#[shuttle_runtime::main]
+async fn axum() -> shuttle_axum::ShuttleAxum {
     let state = Arc::new(RwLock::new(AppState::seeded()));
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::PATCH])
@@ -53,9 +52,7 @@ async fn axum() -> shuttle_service::ShuttleAxum {
                 .on_failure(trace::DefaultOnFailure::new().level(Level::ERROR)),
         );
 
-    let sync_wrapper = SyncWrapper::new(app);
-
-    Ok(sync_wrapper)
+    Ok(app.into())
 }
 
 async fn root() -> &'static str {
