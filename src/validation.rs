@@ -80,8 +80,8 @@ fn create_error_message(error: &ValidationError) -> Option<String> {
     let res = match error.code.as_ref() {
         "email" => "Must be a valid email address".into(),
         "url" => "Must be a valid URL".into(),
-        "length" => match_range(&error)? + " characters long",
-        "range" => match_range(&error)?,
+        "length" => match_range(error)? + " characters long",
+        "range" => match_range(error)?,
         "credit_card" => "Must be a valid credit card number".into(),
         "phone" => "Must be a valid phone number".into(),
         "required" => "This field is required".into(),

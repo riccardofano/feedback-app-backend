@@ -665,7 +665,7 @@ impl AppState {
         let mut comments = vec![];
         for comment in request.comments.iter() {
             if let Some(found) = self.comments.get(comment) {
-                comments.push(self.compose_replies(&found))
+                comments.push(self.compose_replies(found))
             }
         }
 
@@ -676,7 +676,7 @@ impl AppState {
             upvotes: request.upvotes,
             upvoted: request.upvoted,
             status: request.status.clone(),
-            description: request.description.clone(),
+            description: request.description,
             comments,
         }
     }

@@ -15,7 +15,7 @@ pub async fn get_request(
     let request = state.get_request(id);
 
     match request {
-        Ok(r) => (StatusCode::OK, Json(Some(r.clone()))),
+        Ok(r) => (StatusCode::OK, Json(Some(r))),
         Err(_) => (StatusCode::NOT_FOUND, Json(None)),
     }
 }
