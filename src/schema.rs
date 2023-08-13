@@ -51,9 +51,11 @@ pub async fn fetch_request_with_comments(
         return Ok(None)
     };
 
+    // NOTE: I'd like to fetch and nest all comments in one go but it seems
+    // tricky with sqlx and I think it's fine for now since it's just a demo
     let comments = sqlx::query_as!(
         Comment,
-        "SELECT * FROM Comment WHERE id_request = $1",
+        "SELECT * FROM Comment WHERE id_request = $1 ORDER BY id",
         id_request
     )
     .fetch_all(pool)
