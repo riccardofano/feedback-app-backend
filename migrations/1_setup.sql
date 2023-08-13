@@ -16,18 +16,8 @@ CREATE TABLE IF NOT EXISTS Request (
 
 CREATE TABLE IF NOT EXISTS Comment (
     id         SERIAL PRIMARY KEY,
+    id_request INTEGER NOT NULL REFERENCES Request(id),
+    id_parent  INTEGER REFERENCES Comment(id),
     owner      TEXT NOT NULL REFERENCES Account(username),
     content    TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS RequestComment (
-    id         SERIAL PRIMARY KEY,
-    id_request INTEGER NOT NULL REFERENCES Request(id),
-    id_comment INTEGER NOT NULL REFERENCES Comment(id)
-);
-
-CREATE TABLE IF NOT EXISTS CommentReply (
-    id        SERIAL PRIMARY KEY,
-    id_parent INTEGER NOT NULL REFERENCES Comment(id),
-    id_reply  INTEGER NOT NULL REFERENCES Comment(id)
 );
