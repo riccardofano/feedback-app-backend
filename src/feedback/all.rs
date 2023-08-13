@@ -1,19 +1,23 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde_json::json;
 
-use crate::SharedState;
+use crate::{schema::fetch_all_requests, Context, CURRENT_USER};
 
-#[tracing::instrument(name = "feedback/all")]
-pub async fn get_feedback_requests(State(state): State<SharedState>) -> impl IntoResponse {
-    let state = state.read().unwrap().clone();
-    let current_user = state.get_current_user();
-    let product_requests = state.get_all_requests();
+pub async fn get_feedback_requests(State(context): State<Context>) -> impl IntoResponse {
+    let requests = match fetch_all_requests(&context.pool).await {
+        Ok(request) => request,
+        Err(err) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!(err.to_string())),
+            )
+        }
+    };
 
-    (
-        StatusCode::OK,
-        Json(json!({
-            "currentUser": current_user,
-            "productRequests": product_requests
-        })),
-    )
+    let result = json!({
+        "currentUser": CURRENT_USER,
+        "productRequests": requests
+    });
+
+    (StatusCode::OK, Json(result))
 }

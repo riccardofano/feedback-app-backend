@@ -27,10 +27,11 @@ use crate::{
     feedback::{edit_request, get_feedback_requests, get_request, upvote_request},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Context {
     pool: PgPool,
 }
+const CURRENT_USER: &str = "velvetround";
 
 type SharedState = Arc<RwLock<AppState>>;
 
@@ -52,7 +53,7 @@ async fn axum(
 
     let app = Router::new()
         .route("/", get(root))
-        // .route("/feedback/all", get(get_feedback_requests))
+        .route("/feedback/all", get(get_feedback_requests))
         // .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
         // .route("/feedback/:id/edit", patch(edit_request))

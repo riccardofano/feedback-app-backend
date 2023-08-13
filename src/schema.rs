@@ -36,11 +36,20 @@ pub struct CommentWithReplies {
     pub replies: Vec<CommentWithReplies>,
 }
 
+pub async fn fetch_all_requests(pool: &PgPool) -> Result<Vec<Request>> {
+    let rows = sqlx::query_as!(Request, "SELECT * FROM Request")
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows)
+}
+
 pub async fn fetch_request(pool: &PgPool, id_request: i32) -> Result<Option<Request>> {
-    sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
+    let row = sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
         .fetch_optional(pool)
-        .await
-        .map_err(|err| anyhow::anyhow!("Could not fetch request with id {id_request}: {err}"))
+        .await?;
+
+    Ok(row)
 }
 
 pub async fn fetch_request_with_comments(
