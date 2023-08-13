@@ -1,21 +1,24 @@
 use axum::{
+    debug_handler,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
 };
 
-use crate::SharedState;
+use crate::schema::Request;
+use crate::Context;
 
-pub async fn get_request(
-    Path(id): Path<usize>,
-    State(state): State<SharedState>,
-) -> impl IntoResponse {
-    let state = state.read().unwrap();
-    let request = state.get_request(id);
+#[debug_handler]
+pub async fn get_request(Path(id): Path<i32>, State(context): State<Context>) -> impl IntoResponse {
+    let row = sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id)
+        .fetch_optional(&context.pool)
+        .await
+        .ok()
+        .flatten();
 
-    match request {
-        Ok(r) => (StatusCode::OK, Json(Some(r))),
-        Err(_) => (StatusCode::NOT_FOUND, Json(None)),
+    match row {
+        Some(request) => (StatusCode::OK, Json(Some(request))),
+        None => (StatusCode::NOT_FOUND, Json(None)),
     }
 }
