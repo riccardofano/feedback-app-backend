@@ -1,7 +1,6 @@
 use anyhow::Result;
-use axum::http::request;
 use serde::Serialize;
-use sqlx::{Acquire, FromRow, PgConnection, PgPool};
+use sqlx::{FromRow, PgPool};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct Request {
@@ -37,15 +36,18 @@ pub struct CommentWithReplies {
     pub replies: Vec<CommentWithReplies>,
 }
 
+pub async fn fetch_request(pool: &PgPool, id_request: i32) -> Result<Option<Request>> {
+    sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
+        .fetch_optional(pool)
+        .await
+        .map_err(|err| anyhow::anyhow!("Could not fetch request with id {id_request}: {err}"))
+}
+
 pub async fn fetch_request_with_comments(
     pool: &PgPool,
     id_request: i32,
 ) -> Result<Option<RequestWithComments>> {
-    let request_row = sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
-        .fetch_optional(pool)
-        .await?;
-
-    let Some(request) = request_row else {
+    let Some(request) = fetch_request(pool, id_request).await? else {
         return Ok(None)
     };
 
