@@ -1,5 +1,7 @@
+use anyhow::Result;
+use axum::http::request;
 use serde::Serialize;
-use sqlx::FromRow;
+use sqlx::{Acquire, FromRow, PgConnection, PgPool};
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct Request {
@@ -10,7 +12,13 @@ pub struct Request {
     pub upvoted: bool,
     pub status: String,
     pub description: String,
-    pub comments: Option<Vec<Comment>>,
+}
+
+#[derive(Serialize)]
+pub struct RequestWithComments {
+    #[serde(flatten)]
+    pub request: Request,
+    pub comments: Vec<CommentWithReplies>,
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -22,38 +30,53 @@ pub struct Comment {
     pub content: String,
 }
 
-// NOTE: I had to manually implement Decode instead of deriving sqlx::Type
-// because there's a bug with rustc where it can't properly resolve the lifetype
-// of a type when there's also the same type but wrapped in Option<T>
-// (i32 and Option<i32> in this case)
-// https://github.com/launchbadge/sqlx/issues/1031
-impl<'r> ::sqlx::decode::Decode<'r, ::sqlx::Postgres> for Comment {
-    fn decode(
-        value: ::sqlx::postgres::PgValueRef<'r>,
-    ) -> ::std::result::Result<
-        Self,
-        ::std::boxed::Box<
-            dyn ::std::error::Error + 'static + ::std::marker::Send + ::std::marker::Sync,
-        >,
-    > {
-        let mut decoder = ::sqlx::postgres::types::PgRecordDecoder::new(value)?;
-        let id = decoder.try_decode::<i32>()?;
-        let id_request = decoder.try_decode::<i32>()?;
-        let id_parent = decoder.try_decode::<Option<i32>>()?;
-        let owner = decoder.try_decode::<String>()?;
-        let content = decoder.try_decode::<String>()?;
-        ::std::result::Result::Ok(Comment {
-            id,
-            id_request,
-            id_parent,
-            owner,
-            content,
-        })
-    }
+#[derive(Serialize)]
+pub struct CommentWithReplies {
+    #[serde(flatten)]
+    pub comment: Comment,
+    pub replies: Vec<CommentWithReplies>,
 }
 
-impl ::sqlx::Type<::sqlx::Postgres> for Comment {
-    fn type_info() -> ::sqlx::postgres::PgTypeInfo {
-        ::sqlx::postgres::PgTypeInfo::with_name("Comment")
+pub async fn fetch_request_with_comments(
+    pool: &PgPool,
+    id_request: i32,
+) -> Result<Option<RequestWithComments>> {
+    let request_row = sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
+        .fetch_optional(pool)
+        .await?;
+
+    let Some(request) = request_row else {
+        return Ok(None)
+    };
+
+    let comments = sqlx::query_as!(
+        Comment,
+        "SELECT * FROM Comment WHERE id_request = $1",
+        id_request
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let mut nested_comments: Vec<CommentWithReplies> = Vec::new();
+    for comment in comments {
+        let parent_id = comment.id_parent;
+        let new_comment = CommentWithReplies {
+            comment,
+            replies: Vec::new(),
+        };
+
+        if let Some(id) = parent_id {
+            let Some(parent_comment) = nested_comments.iter_mut().find(|c| c.comment.id == id) else {
+                continue;
+            };
+            parent_comment.replies.push(new_comment)
+        } else {
+            nested_comments.push(new_comment)
+        }
     }
+
+    Ok(Some(RequestWithComments {
+        request,
+        comments: nested_comments,
+    }))
 }
