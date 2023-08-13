@@ -27,6 +27,8 @@ use crate::{
     feedback::{edit_request, get_feedback_requests, get_request, upvote_request},
 };
 
+pub type Result<T> = anyhow::Result<T>;
+
 #[derive(Debug, Clone)]
 pub struct Context {
     pool: PgPool,
@@ -56,7 +58,7 @@ async fn axum(
         .route("/feedback/all", get(get_feedback_requests))
         // .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
-        // .route("/feedback/:id/edit", patch(edit_request))
+        .route("/feedback/:id/edit", patch(edit_request))
         // .route("/feedback/:id/upvote", post(upvote_request))
         // .route("/feedback/:id/comment", post(create_comment))
         // .route("/comments/:id/reply", post(create_reply))

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::Result;
 use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 
