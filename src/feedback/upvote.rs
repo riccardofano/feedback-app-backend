@@ -1,29 +1,39 @@
 use axum::{
     extract::{Path, State},
-    http::StatusCode,
     response::IntoResponse,
     Json,
 };
-use serde_json::json;
+use serde::Serialize;
+use sqlx::PgPool;
 
-use crate::SharedState;
+use crate::{Context, Result};
 
 pub async fn upvote_request(
-    Path(id): Path<usize>,
-    State(state): State<SharedState>,
-) -> impl IntoResponse {
-    let mut state = state.write().unwrap();
-    let request = state.upvote_request(id);
+    Path(id_request): Path<i32>,
+    State(context): State<Context>,
+) -> Result<impl IntoResponse> {
+    let upvote_data = update_upvotes(&context.pool, id_request).await?;
+    Ok(Json(upvote_data))
+}
 
-    match request {
-        Ok(r) => (
-            StatusCode::OK,
-            Json(Some(json!(
-            {
-                "upvoted": r.upvoted,
-                "upvotes": r.upvotes
-            }))),
-        ),
-        Err(_) => (StatusCode::NOT_FOUND, Json(None)),
-    }
+#[derive(Serialize)]
+struct UpvoteData {
+    upvotes: i32,
+    upvoted: bool,
+}
+
+async fn update_upvotes(pool: &PgPool, id_request: i32) -> anyhow::Result<UpvoteData> {
+    let row = sqlx::query_as!(
+        UpvoteData,
+        r#"UPDATE Request SET
+        upvotes = CASE WHEN upvoted THEN upvotes - 1 ELSE upvotes + 1 END,
+        upvoted = NOT upvoted
+        WHERE id = $1
+        RETURNING upvotes, upvoted"#,
+        id_request
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row)
 }

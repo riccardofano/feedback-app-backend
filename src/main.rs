@@ -80,7 +80,7 @@ async fn axum(
         .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
         .route("/feedback/:id/edit", patch(edit_request))
-        // .route("/feedback/:id/upvote", post(upvote_request))
+        .route("/feedback/:id/upvote", post(upvote_request))
         .route("/feedback/:id/comment", post(create_comment))
         .route(
             "/feedback/:id/comment/:comment_id/reply",
