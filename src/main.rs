@@ -77,7 +77,7 @@ async fn axum(
     let app = Router::new()
         .route("/", get(root))
         .route("/feedback/all", get(get_feedback_requests))
-        // .route("/feedback/new", post(create_request))
+        .route("/feedback/new", post(create_request))
         .route("/feedback/:id", get(get_request))
         .route("/feedback/:id/edit", patch(edit_request))
         // .route("/feedback/:id/upvote", post(upvote_request))
