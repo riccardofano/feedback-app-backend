@@ -1,4 +1,3 @@
-use crate::Result;
 use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 
@@ -36,7 +35,7 @@ pub struct CommentWithReplies {
     pub replies: Vec<CommentWithReplies>,
 }
 
-pub async fn fetch_all_requests(pool: &PgPool) -> Result<Vec<Request>> {
+pub async fn fetch_all_requests(pool: &PgPool) -> anyhow::Result<Vec<Request>> {
     let rows = sqlx::query_as!(Request, "SELECT * FROM Request")
         .fetch_all(pool)
         .await?;
@@ -44,7 +43,7 @@ pub async fn fetch_all_requests(pool: &PgPool) -> Result<Vec<Request>> {
     Ok(rows)
 }
 
-pub async fn fetch_request(pool: &PgPool, id_request: i32) -> Result<Option<Request>> {
+pub async fn fetch_request(pool: &PgPool, id_request: i32) -> anyhow::Result<Option<Request>> {
     let row = sqlx::query_as!(Request, "SELECT * FROM Request WHERE id = $1", id_request)
         .fetch_optional(pool)
         .await?;
@@ -55,7 +54,7 @@ pub async fn fetch_request(pool: &PgPool, id_request: i32) -> Result<Option<Requ
 pub async fn fetch_request_with_comments(
     pool: &PgPool,
     id_request: i32,
-) -> Result<Option<RequestWithComments>> {
+) -> anyhow::Result<Option<RequestWithComments>> {
     let Some(request) = fetch_request(pool, id_request).await? else {
         return Ok(None)
     };

@@ -7,14 +7,15 @@ mod validation;
 use std::sync::{Arc, RwLock};
 
 use axum::{
-    http::Method,
+    http::{Method, StatusCode},
+    response::{IntoResponse, Response},
     routing::{get, patch, post},
     Router,
 };
 
 use dotenvy_macro::dotenv;
 use feedback::create_request;
-use sqlx::{Executor, PgPool};
+use sqlx::PgPool;
 use tower_http::{
     cors::{Any, CorsLayer},
     trace::{self, TraceLayer},
@@ -27,7 +28,27 @@ use crate::{
     feedback::{edit_request, get_feedback_requests, get_request, upvote_request},
 };
 
-pub type Result<T> = anyhow::Result<T>;
+pub type Result<T> = std::result::Result<T, AppError>;
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self.0),
+        )
+            .into_response()
+    }
+}
+
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Context {
