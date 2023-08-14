@@ -82,7 +82,10 @@ async fn axum(
         .route("/feedback/:id/edit", patch(edit_request))
         // .route("/feedback/:id/upvote", post(upvote_request))
         .route("/feedback/:id/comment", post(create_comment))
-        // .route("/comments/:id/reply", post(create_reply))
+        .route(
+            "/feedback/:id/comment/:comment_id/reply",
+            post(create_reply),
+        )
         .with_state(Context { pool })
         .layer(cors)
         .layer(
