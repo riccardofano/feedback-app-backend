@@ -1,10 +1,7 @@
-mod appstate;
 mod comment;
 mod feedback;
 mod schema;
 mod validation;
-
-use std::sync::{Arc, RwLock};
 
 use axum::{
     http::{Method, StatusCode},
@@ -23,7 +20,6 @@ use tower_http::{
 use tracing::Level;
 
 use crate::{
-    appstate::AppState,
     comment::{create_comment, create_reply},
     feedback::{edit_request, get_feedback_requests, get_request, upvote_request},
 };
@@ -55,8 +51,6 @@ pub struct Context {
     pool: PgPool,
 }
 const CURRENT_USER: &str = "velvetround";
-
-type SharedState = Arc<RwLock<AppState>>;
 
 #[shuttle_runtime::main]
 async fn axum(
