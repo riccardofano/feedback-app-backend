@@ -1,0 +1,395 @@
+{
+  "db": "PostgreSQL",
+  "1309103cd5fe7e314741b3751d418cdb0833082af7ca1f2b91279959f9cee5fa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upvotes",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upvoted",
+          "ordinal": 1,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "UPDATE Request SET\n        upvotes = CASE WHEN upvoted THEN upvotes - 1 ELSE upvotes + 1 END,\n        upvoted = NOT upvoted\n        WHERE id = $1\n        RETURNING upvotes, upvoted"
+  },
+  "306e4ce0ee0c8131f9cbf2505bf5b1abb3fd7ac44dc53ffe84b3ef2cc89ccd7a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "category",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "upvotes",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upvoted",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "status",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM Request"
+  },
+  "58881637733442ff75e3f861b610b8edfc086b7aa370427ae5572acef887c119": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "category",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "upvotes",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upvoted",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "status",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT * FROM Request WHERE id = $1"
+  },
+  "7ba97b92578fc33cc850fd3efe4462587dfd3b9c06eaf0ece1bbb55f64139031": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "category",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "upvotes",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upvoted",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "status",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int4"
+        ]
+      }
+    },
+    "query": "UPDATE Request SET title = $1, category = $2, status = $3, description = $4 WHERE id = $5 RETURNING *"
+  },
+  "af924827c2ba60dd218c990e22d10161630fded7d609af736deb90e0838b7d4d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_request",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_parent",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "owner",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 4,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "INSERT INTO Comment\n        (id_request, id_parent, owner, content)\n        VALUES ($1, $2, $3, $4)\n        RETURNING *"
+  },
+  "b2ad13db5579414f114b3b75b615f429bae6480fd61a5d54af47478fb56a36db": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_request",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_parent",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "owner",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 4,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT * FROM Comment WHERE id_request = $1 ORDER BY id"
+  },
+  "c4860eba8e866457e3e68089a49142199932a166e1171173d715c417e2e18bb6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_request",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_parent",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "owner",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 4,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "INSERT INTO Comment (id_request, id_parent, owner, content) VALUES ($1, NULL, $2, $3) RETURNING *"
+  },
+  "e32493ef1756f365180adf91867d517b19735a19c6e31c08006b0778b12b5c10": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "category",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "upvotes",
+          "ordinal": 3,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upvoted",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "status",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "INSERT INTO Request (title, category, status, description) VALUES ($1, $2, $3, $4) RETURNING *"
+  }
+}

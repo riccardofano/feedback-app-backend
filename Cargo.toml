@@ -14,7 +14,7 @@ serde_json = "1.0.91"
 shuttle-axum = "0.21.0"
 shuttle-shared-db = { version = "0.21.0", features = ["postgres"] }
 shuttle-runtime = "0.21.0"
-sqlx = { version = "0.6.2", features = ["runtime-tokio-native-tls", "postgres", "migrate"] }
+sqlx = { version = "0.6.2", features = ["runtime-tokio-native-tls", "postgres", "migrate", "offline"] }
 tokio = "1.28.2"
 sync_wrapper = "0.1.1"
 thiserror = "1.0.38"
