@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 
@@ -61,7 +63,7 @@ pub async fn fetch_request_with_comments(
 
     // NOTE: I'd like to fetch and nest all comments in one go but it seems
     // tricky with sqlx and I think it's fine for now since it's just a demo
-    let comments = sqlx::query_as!(
+    let comment_rows = sqlx::query_as!(
         Comment,
         "SELECT * FROM Comment WHERE id_request = $1 ORDER BY id",
         id_request
@@ -69,26 +71,26 @@ pub async fn fetch_request_with_comments(
     .fetch_all(pool)
     .await?;
 
-    let mut nested_comments: Vec<CommentWithReplies> = Vec::new();
-    for comment in comments {
-        let parent_id = comment.id_parent;
-        let new_comment = CommentWithReplies {
+    let mut comment_map: HashMap<i32, Vec<CommentWithReplies>> = HashMap::new();
+    let mut base_comments = Vec::new();
+
+    for comment in comment_rows.into_iter().rev() {
+        let child_replies = comment_map.remove_entry(&comment.id);
+        let complete_comment = CommentWithReplies {
             comment,
-            replies: Vec::new(),
+            replies: child_replies.map(|entry| entry.1).unwrap_or_default(),
         };
 
-        if let Some(id) = parent_id {
-            let Some(parent_comment) = nested_comments.iter_mut().find(|c| c.comment.id == id) else {
-                continue;
-            };
-            parent_comment.replies.push(new_comment)
+        if let Some(id_parent) = complete_comment.comment.id_parent {
+            let sibling_replies = comment_map.entry(id_parent).or_insert(Vec::new());
+            sibling_replies.push(complete_comment);
         } else {
-            nested_comments.push(new_comment)
+            base_comments.push(complete_comment);
         }
     }
 
     Ok(Some(RequestWithComments {
         request,
-        comments: nested_comments,
+        comments: base_comments.into_iter().rev().collect(),
     }))
 }
