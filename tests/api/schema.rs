@@ -18,3 +18,10 @@ pub struct FeedbackForm {
     pub status: String,
     pub description: String,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpvoteUpdate {
+    pub upvoted: bool,
+    pub upvotes: i32,
+}
+
