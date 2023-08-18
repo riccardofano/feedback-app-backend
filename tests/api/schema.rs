@@ -12,6 +12,13 @@ pub struct Feedback {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct FeedbackWithComments {
+    #[serde(flatten)]
+    pub feedback: Feedback,
+    pub comments: Vec<Comment>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct FeedbackForm {
     pub title: String,
     pub category: String,
@@ -25,3 +32,18 @@ pub struct UpvoteUpdate {
     pub upvotes: i32,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Comment {
+    pub id: i32,
+    pub id_request: i32,
+    pub id_parent: Option<i32>,
+    pub owner: String,
+    pub content: String,
+    pub replies: Vec<Comment>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CommentForm {
+    pub username: String,
+    pub content: String,
+}

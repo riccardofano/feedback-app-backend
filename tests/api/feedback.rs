@@ -3,7 +3,7 @@ use crate::{
         create_app, get_request, is_application_json, parse_response_body, patch_request,
         post_request,
     },
-    schema::{Feedback, FeedbackForm, UpvoteUpdate},
+    schema::{Comment, CommentForm, Feedback, FeedbackForm, FeedbackWithComments, UpvoteUpdate},
 };
 use axum::{body::Body, http::StatusCode};
 use tower::{Service, ServiceExt};
