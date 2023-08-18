@@ -26,6 +26,17 @@ pub struct FeedbackForm {
     pub description: String,
 }
 
+impl Default for FeedbackForm {
+    fn default() -> Self {
+        Self {
+            title: String::from("New feedback"),
+            category: String::from("bug"),
+            status: String::from("planned"),
+            description: String::from("Some description"),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UpvoteUpdate {
     pub upvoted: bool,

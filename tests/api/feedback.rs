@@ -5,7 +5,8 @@ use crate::{
     },
     schema::{Comment, CommentForm, Feedback, FeedbackForm, FeedbackWithComments, UpvoteUpdate},
 };
-use axum::{body::Body, http::StatusCode};
+use axum::{body::Body, http::StatusCode, Router};
+use hyper::Response;
 use tower::{Service, ServiceExt};
 
 #[tokio::test]
@@ -43,20 +44,21 @@ async fn get_non_existant_feedback() {
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
+async fn create_feedback_response(
+    app: &mut Router,
+    form: &FeedbackForm,
+) -> Response<http_body::combinators::UnsyncBoxBody<axum::body::Bytes, axum::Error>> {
+    let encoded_form = serde_urlencoded::to_string(form).unwrap();
+    let request = post_request("/feedback/new", encoded_form.into()).await;
+    app.call(request).await.unwrap()
+}
+
 #[tokio::test]
 async fn post_new_feedback() {
-    let app = create_app().await;
+    let mut app = create_app().await;
 
-    let form = FeedbackForm {
-        title: "New feedback".into(),
-        category: "bug".into(),
-        status: "planned".into(),
-        description: "Some description".into(),
-    };
-    let encoded_form = serde_urlencoded::to_string(&form).unwrap();
-
-    let request = post_request("/feedback/new", encoded_form.into()).await;
-    let response = app.oneshot(request).await.unwrap();
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
 
     assert_eq!(response.status(), StatusCode::CREATED);
     assert!(is_application_json(response.headers()));
@@ -114,16 +116,8 @@ async fn post_new_feedback_with_missing_data() {
 async fn edit_feedback() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm {
-        title: "New feedback".into(),
-        category: "bug".into(),
-        status: "planned".into(),
-        description: "Some description".into(),
-    };
-    let encoded_form = serde_urlencoded::to_string(&form).unwrap();
-
-    let request = post_request("/feedback/new", encoded_form.into()).await;
-    let response = app.call(request).await.unwrap();
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
     assert_eq!(json.title, form.title);
@@ -157,17 +151,8 @@ async fn edit_feedback() {
 async fn upvote_unupvote_feedback() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm {
-        title: "New feedback".into(),
-        category: "bug".into(),
-        status: "planned".into(),
-        description: "Some description".into(),
-    };
-    let encoded_form = serde_urlencoded::to_string(&form).unwrap();
-
-    let request = post_request("/feedback/new", encoded_form.into()).await;
-    let response = app.call(request).await.unwrap();
-
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
     assert!(!json.upvoted);
@@ -195,16 +180,8 @@ async fn upvote_unupvote_feedback() {
 async fn post_feedback_comment() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm {
-        title: "New feedback".into(),
-        category: "bug".into(),
-        status: "planned".into(),
-        description: "Some description".into(),
-    };
-    let encoded_form = serde_urlencoded::to_string(&form).unwrap();
-    let request = post_request("/feedback/new", encoded_form.into()).await;
-    let response = app.call(request).await.unwrap();
-
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
     // NOTE: usernames are seeded at the momement and I'm using a known one.
