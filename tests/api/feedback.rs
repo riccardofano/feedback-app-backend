@@ -214,3 +214,156 @@ async fn post_feedback_comment() {
     assert_eq!(feedback_json.comments[0].content, json_comment.content);
     assert!(feedback_json.comments[0].replies.is_empty());
 }
+
+#[tokio::test]
+async fn post_feedback_comment_with_missing_fields() {
+    let mut app = create_app().await;
+
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
+    let json: Feedback = parse_response_body(response).await;
+
+    let uri = &format!("/feedback/{}/comment", json.id);
+
+    let encoded_comment = String::from("content=Some%20comment");
+    let request = post_request(uri, encoded_comment.into()).await;
+    let response = app.call(request).await.unwrap();
+    assert_eq!(
+        response.status(),
+        StatusCode::BAD_REQUEST,
+        "expected to be missing username/owner"
+    );
+
+    let encoded_comment = String::from("username=velvetround");
+    let request = post_request(uri, encoded_comment.into()).await;
+    let response = app.call(request).await.unwrap();
+    assert_eq!(
+        response.status(),
+        StatusCode::BAD_REQUEST,
+        "expected to be missing content"
+    );
+
+    let request = get_request(&format!("/feedback/{}", json.id), Body::empty()).await;
+    let response = app.call(request).await.unwrap();
+    let feedback: FeedbackWithComments = parse_response_body(response).await;
+
+    assert_eq!(feedback.feedback.id, json.id);
+    assert!(feedback.comments.is_empty())
+}
+
+#[tokio::test]
+async fn post_feedback_reply() {
+    let mut app = create_app().await;
+
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
+    let json: Feedback = parse_response_body(response).await;
+
+    let encoded_comment = serde_urlencoded::to_string(CommentForm {
+        username: "velvetround".into(),
+        content: "Some content".into(),
+    })
+    .unwrap();
+    let commment_request = post_request(
+        &format!("/feedback/{}/comment", json.id),
+        encoded_comment.into(),
+    )
+    .await;
+    let response = app.call(commment_request).await.unwrap();
+    let comment_json: Comment = parse_response_body(response).await;
+
+    let reply = CommentForm {
+        username: "soccerviewer8".into(),
+        content: "A thoroughly thought out reply".into(),
+    };
+    let encoded_reply = serde_urlencoded::to_string(&reply).unwrap();
+    let uri = &format!("/feedback/{}/comment/{}/reply", json.id, comment_json.id);
+    let reply_request = post_request(uri, encoded_reply.into()).await;
+    let response = app.call(reply_request).await.unwrap();
+
+    let reply_json: Comment = parse_response_body(response).await;
+
+    assert_eq!(reply_json.id_request, json.id);
+    assert_eq!(reply_json.id_parent, Some(comment_json.id));
+    assert_eq!(reply_json.content, reply.content);
+    assert_eq!(reply_json.owner, reply.username);
+
+    let feedback_request = get_request(&format!("/feedback/{}", json.id), Body::empty()).await;
+    let response = app.call(feedback_request).await.unwrap();
+
+    let complete_feedback: FeedbackWithComments = parse_response_body(response).await;
+
+    assert_eq!(complete_feedback.feedback.id, json.id);
+    assert_eq!(complete_feedback.comments.len(), 1);
+    assert_eq!(complete_feedback.comments[0].id, comment_json.id);
+    assert_eq!(complete_feedback.comments[0].replies.len(), 1);
+    assert_eq!(complete_feedback.comments[0].replies[0].id, reply_json.id);
+    assert_eq!(
+        complete_feedback.comments[0].replies[0].owner,
+        reply_json.owner
+    );
+    assert_eq!(
+        complete_feedback.comments[0].replies[0].content,
+        reply_json.content
+    );
+}
+
+#[tokio::test]
+async fn post_feedback_reply_nested() {
+    let mut app = create_app().await;
+
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
+    let json: Feedback = parse_response_body(response).await;
+
+    let encoded_comment = serde_urlencoded::to_string(CommentForm::default()).unwrap();
+    let commment_request = post_request(
+        &format!("/feedback/{}/comment", json.id),
+        encoded_comment.into(),
+    )
+    .await;
+    let comment_json: Comment =
+        parse_response_body(app.call(commment_request).await.unwrap()).await;
+
+    let reply1 = serde_urlencoded::to_string(CommentForm::default()).unwrap();
+    let uri = &format!("/feedback/{}/comment/{}/reply", json.id, comment_json.id);
+    let response = app
+        .call(post_request(uri, reply1.into()).await)
+        .await
+        .unwrap();
+    let reply1: Comment = parse_response_body(response).await;
+
+    let reply2 = serde_urlencoded::to_string(CommentForm::default()).unwrap();
+    let uri = &format!("/feedback/{}/comment/{}/reply", json.id, reply1.id);
+    let response = app
+        .call(post_request(uri, reply2.into()).await)
+        .await
+        .unwrap();
+    let reply2: Comment = parse_response_body(response).await;
+
+    let reply3 = serde_urlencoded::to_string(CommentForm::default()).unwrap();
+    let uri = &format!("/feedback/{}/comment/{}/reply", json.id, reply2.id);
+    let response = app
+        .call(post_request(uri, reply3.into()).await)
+        .await
+        .unwrap();
+    let reply3: Comment = parse_response_body(response).await;
+
+    let feedback_request = get_request(&format!("/feedback/{}", json.id), Body::empty()).await;
+    let response = app.call(feedback_request).await.unwrap();
+
+    let complete_feedback: FeedbackWithComments = parse_response_body(response).await;
+
+    assert_eq!(complete_feedback.feedback.id, json.id);
+    assert_eq!(complete_feedback.comments.len(), 1);
+    assert_eq!(complete_feedback.comments[0].id, comment_json.id);
+    assert_eq!(complete_feedback.comments[0].replies.len(), 1);
+    assert_eq!(complete_feedback.comments[0].replies[0].id, reply1.id);
+    assert_eq!(complete_feedback.comments[0].replies[0].replies.len(), 1);
+    #[rustfmt::skip]
+    assert_eq!(complete_feedback.comments[0].replies[0].replies[0].id, reply2.id);
+    #[rustfmt::skip]
+    assert_eq!(complete_feedback.comments[0].replies[0].replies[0] .replies .len(), 1);
+    #[rustfmt::skip]
+    assert_eq!(complete_feedback.comments[0].replies[0].replies[0].replies[0].id, reply3.id);
+}

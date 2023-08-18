@@ -58,3 +58,12 @@ pub struct CommentForm {
     pub username: String,
     pub content: String,
 }
+
+impl Default for CommentForm {
+    fn default() -> Self {
+        Self {
+            username: "velvetround".into(),
+            content: "Some content".into(),
+        }
+    }
+}
