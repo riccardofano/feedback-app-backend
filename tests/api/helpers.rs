@@ -1,11 +1,12 @@
-use dotenvy_macro::dotenv;
 use hyper::{http::HeaderValue, Body, HeaderMap, Request, Response};
 use serde::de::DeserializeOwned;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
+const TEST_DATABASE_URL: &str = "postgres://postgres:postgres@localhost:23871/postgres";
+
 async fn create_pool() -> PgPool {
     let pool = PgPoolOptions::new()
-        .connect(dotenv!("DATABASE_URL"))
+        .connect(TEST_DATABASE_URL)
         .await
         .expect("Failed to connect to database");
 
