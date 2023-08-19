@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use validator::Validate;
 
 use crate::{
-    schema::{Comment, CommentWithReplies},
+    schema::{Comment, CommentWithReplies, CommentWithUser, User},
     validation::ValidatedForm,
     {Context, Result},
 };
@@ -28,7 +28,10 @@ pub async fn create_reply(
 ) -> Result<impl IntoResponse> {
     let new_reply = insert_reply(&context.pool, id_request, id_parent, form).await?;
 
-    Ok((StatusCode::CREATED, Json(new_reply)))
+    match &new_reply {
+        Some(_) => Ok((StatusCode::CREATED, Json(new_reply))),
+        None => Ok((StatusCode::BAD_REQUEST, Json(new_reply))),
+    }
 }
 
 async fn insert_reply(
@@ -36,7 +39,19 @@ async fn insert_reply(
     id_request: i32,
     id_parent: i32,
     form: CreateReplyForm,
-) -> anyhow::Result<CommentWithReplies> {
+) -> anyhow::Result<Option<CommentWithReplies>> {
+    let user = sqlx::query_as!(
+        User,
+        "SELECT * FROM Account WHERE username = $1",
+        form.username
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let Some(user) = user else {
+        return Ok(None)
+    };
+
     let comment = sqlx::query_as!(
         Comment,
         r#"INSERT INTO Comment
@@ -51,8 +66,16 @@ async fn insert_reply(
     .fetch_one(pool)
     .await?;
 
-    Ok(CommentWithReplies {
-        comment,
+    let complete_comment = CommentWithUser {
+        id: comment.id,
+        id_parent: comment.id_parent,
+        id_request: comment.id_request,
+        content: comment.content,
+        user,
+    };
+
+    Ok(Some(CommentWithReplies {
+        comment: complete_comment,
         replies: Vec::new(),
-    })
+    }))
 }

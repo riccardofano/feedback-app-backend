@@ -53,6 +53,20 @@ async fn create_feedback_response(
     app.call(request).await.unwrap()
 }
 
+async fn create_base_comment(
+    app: &mut Router,
+    form: &CommentForm,
+    id_feedback: i32,
+) -> Response<http_body::combinators::UnsyncBoxBody<axum::body::Bytes, axum::Error>> {
+    let encoded_form = serde_urlencoded::to_string(form).unwrap();
+    let request = post_request(
+        &format!("/feedback/{}/comment", id_feedback),
+        encoded_form.into(),
+    )
+    .await;
+    app.call(request).await.unwrap()
+}
+
 #[tokio::test]
 async fn post_new_feedback() {
     let mut app = create_app().await;
@@ -200,7 +214,7 @@ async fn post_feedback_comment() {
 
     assert_eq!(json_comment.id_request, json.id);
     assert_eq!(json_comment.id_parent, None);
-    assert_eq!(json_comment.owner, comment.username);
+    assert_eq!(json_comment.user.username, comment.username);
     assert_eq!(json_comment.content, comment.content);
 
     let request = get_request(&format!("/feedback/{}", json.id), Body::empty()).await;
@@ -210,7 +224,10 @@ async fn post_feedback_comment() {
     assert_eq!(feedback_json.feedback.id, json.id);
     assert_eq!(feedback_json.comments.len(), 1);
     assert_eq!(feedback_json.comments[0].id, json_comment.id);
-    assert_eq!(feedback_json.comments[0].owner, json_comment.owner);
+    assert_eq!(
+        feedback_json.comments[0].user.username,
+        json_comment.user.username
+    );
     assert_eq!(feedback_json.comments[0].content, json_comment.content);
     assert!(feedback_json.comments[0].replies.is_empty());
 }
@@ -286,7 +303,6 @@ async fn post_feedback_reply() {
     assert_eq!(reply_json.id_request, json.id);
     assert_eq!(reply_json.id_parent, Some(comment_json.id));
     assert_eq!(reply_json.content, reply.content);
-    assert_eq!(reply_json.owner, reply.username);
 
     let feedback_request = get_request(&format!("/feedback/{}", json.id), Body::empty()).await;
     let response = app.call(feedback_request).await.unwrap();
@@ -298,10 +314,6 @@ async fn post_feedback_reply() {
     assert_eq!(complete_feedback.comments[0].id, comment_json.id);
     assert_eq!(complete_feedback.comments[0].replies.len(), 1);
     assert_eq!(complete_feedback.comments[0].replies[0].id, reply_json.id);
-    assert_eq!(
-        complete_feedback.comments[0].replies[0].owner,
-        reply_json.owner
-    );
     assert_eq!(
         complete_feedback.comments[0].replies[0].content,
         reply_json.content
@@ -366,4 +378,30 @@ async fn post_feedback_reply_nested() {
     assert_eq!(complete_feedback.comments[0].replies[0].replies[0] .replies .len(), 1);
     #[rustfmt::skip]
     assert_eq!(complete_feedback.comments[0].replies[0].replies[0].replies[0].id, reply3.id);
+}
+
+#[tokio::test]
+async fn comment_has_user_information() {
+    let mut app = create_app().await;
+
+    let form = FeedbackForm::default();
+    let response = create_feedback_response(&mut app, &form).await;
+    let json: Feedback = parse_response_body(response).await;
+
+    let comment = CommentForm {
+        username: "velvetround".into(),
+        content: "Whatever".into(),
+    };
+    let response = create_base_comment(&mut app, &comment, json.id).await;
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let string = String::from_utf8(body.to_vec()).unwrap();
+
+    dbg!(&string);
+
+    // NOTE: I'm searching the string because otherwise I'd have to modify the
+    // Comment struct first before writing a failing test
+    assert!(string.contains(r#""user":{"#));
+    assert!(string.contains(r#""image":"/image-zena.jpg""#));
+    assert!(string.contains(r#""name":"Zena Kelley""#));
+    assert!(string.contains(r#""username":"velvetround""#));
 }

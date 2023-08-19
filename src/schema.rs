@@ -26,15 +26,31 @@ pub struct Comment {
     pub id: i32,
     pub id_request: i32,
     pub id_parent: Option<i32>,
-    pub owner: String,
     pub content: String,
+    pub owner: String,
+}
+
+#[derive(Serialize)]
+pub struct CommentWithUser {
+    pub id: i32,
+    pub id_parent: Option<i32>,
+    pub id_request: i32,
+    pub content: String,
+    pub user: User,
 }
 
 #[derive(Serialize)]
 pub struct CommentWithReplies {
     #[serde(flatten)]
-    pub comment: Comment,
+    pub comment: CommentWithUser,
     pub replies: Vec<CommentWithReplies>,
+}
+
+#[derive(Debug, sqlx::Type, Serialize)]
+pub struct User {
+    pub image: String,
+    pub name: String,
+    pub username: String,
 }
 
 pub async fn fetch_all_requests(pool: &PgPool) -> anyhow::Result<Vec<Request>> {
@@ -64,8 +80,16 @@ pub async fn fetch_request_with_comments(
     // NOTE: I'd like to fetch and nest all comments in one go but it seems
     // tricky with sqlx and I think it's fine for now since it's just a demo
     let comment_rows = sqlx::query_as!(
-        Comment,
-        "SELECT * FROM Comment WHERE id_request = $1 ORDER BY id",
+        CommentWithUser,
+        // NOTE: You can't use `u.*`, you have to specify the names explicitely
+        r#"SELECT
+        c.id, c.id_parent, c.id_request, c.content,
+        (u.image, u.name, u.username) as "user!: User"
+        FROM Comment c
+        INNER JOIN Account u
+        ON c.owner = u.username
+        WHERE id_request = $1
+        ORDER BY id"#,
         id_request
     )
     .fetch_all(pool)
