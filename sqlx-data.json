@@ -1,49 +1,5 @@
 {
   "db": "PostgreSQL",
-  "00f2ab97818e9715ffab5b03a94cba4cf8137ca75cd6ce4431d41c73dd32843d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "id_parent",
-          "ordinal": 1,
-          "type_info": "Int4"
-        },
-        {
-          "name": "id_request",
-          "ordinal": 2,
-          "type_info": "Int4"
-        },
-        {
-          "name": "content",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "user!: User",
-          "ordinal": 4,
-          "type_info": "Record"
-        }
-      ],
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": "SELECT\n        c.id, c.id_parent, c.id_request, c.content,\n        (u.image, u.name, u.username) as \"user!: User\"\n        FROM Comment c\n        INNER JOIN Account u\n        ON c.owner = u.username\n        WHERE id_request = $1\n        ORDER BY id"
-  },
   "1309103cd5fe7e314741b3751d418cdb0833082af7ca1f2b91279959f9cee5fa": {
     "describe": {
       "columns": [
@@ -70,7 +26,7 @@
     },
     "query": "UPDATE Request SET\n        upvotes = CASE WHEN upvoted THEN upvotes - 1 ELSE upvotes + 1 END,\n        upvoted = NOT upvoted\n        WHERE id = $1\n        RETURNING upvotes, upvoted"
   },
-  "1ec0d9665c225e79fb3b13ec125a284bf43807d53895fe642334728cd6430ba8": {
+  "302dd4113f9fc49bce21892e9c8e2004707929d12a180423e66ac344ccc8ad95": {
     "describe": {
       "columns": [
         {
@@ -79,12 +35,12 @@
           "type_info": "Int4"
         },
         {
-          "name": "id_request",
+          "name": "id_parent",
           "ordinal": 1,
           "type_info": "Int4"
         },
         {
-          "name": "id_parent",
+          "name": "id_request",
           "ordinal": 2,
           "type_info": "Int4"
         },
@@ -97,24 +53,31 @@
           "name": "content",
           "ordinal": 4,
           "type_info": "Text"
+        },
+        {
+          "name": "replying_to",
+          "ordinal": 5,
+          "type_info": "Text"
         }
       ],
       "nullable": [
         false,
-        false,
         true,
         false,
-        false
+        false,
+        false,
+        true
       ],
       "parameters": {
         "Left": [
+          "Int4",
           "Int4",
           "Text",
           "Text"
         ]
       }
     },
-    "query": "INSERT INTO Comment (id_request, id_parent, owner, content)\n        VALUES ($1, NULL, $2, $3)\n        RETURNING *"
+    "query": "WITH new_comment AS (\n            INSERT INTO Comment (id_request, id_parent, owner, content)\n            VALUES ($1, $2, $3, $4)\n            RETURNING *\n        )\n        SELECT\n            n.id, n.id_parent, n.id_request, n.owner, n.content,\n            parent.owner as replying_to\n        FROM new_comment n\n        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id"
   },
   "306e4ce0ee0c8131f9cbf2505bf5b1abb3fd7ac44dc53ffe84b3ef2cc89ccd7a": {
     "describe": {
@@ -318,53 +281,6 @@
     },
     "query": "SELECT * FROM Account WHERE username = $1"
   },
-  "af924827c2ba60dd218c990e22d10161630fded7d609af736deb90e0838b7d4d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "id_request",
-          "ordinal": 1,
-          "type_info": "Int4"
-        },
-        {
-          "name": "id_parent",
-          "ordinal": 2,
-          "type_info": "Int4"
-        },
-        {
-          "name": "owner",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "content",
-          "ordinal": 4,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int4",
-          "Int4",
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "INSERT INTO Comment\n        (id_request, id_parent, owner, content)\n        VALUES ($1, $2, $3, $4)\n        RETURNING *"
-  },
   "e32493ef1756f365180adf91867d517b19735a19c6e31c08006b0778b12b5c10": {
     "describe": {
       "columns": [
@@ -423,5 +339,107 @@
       }
     },
     "query": "INSERT INTO Request (title, category, status, description) VALUES ($1, $2, $3, $4) RETURNING *"
+  },
+  "e8cde3bf477f24b5120b5bbcca29c8f0234d3bda2cd03bc33b81b021dc5ad1f6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_parent",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_request",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "owner",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "content",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "replying_to",
+          "ordinal": 5,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        WITH new_comment AS (\n            INSERT INTO Comment (id_request, id_parent, owner, content)\n            VALUES ($1, NULL, $2, $3)\n            RETURNING *\n        )\n        SELECT\n            n.id, n.id_parent, n.id_request, n.owner, n.content,\n            parent.owner as replying_to\n        FROM new_comment n\n        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id\n        "
+  },
+  "f597025cdaacc276efe0e7c0472ee0227252de630b71c1d34b54d4cad4d3c9b1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_parent",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "id_request",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "content",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "user!: User",
+          "ordinal": 4,
+          "type_info": "Record"
+        },
+        {
+          "name": "replying_to: Option<String>",
+          "ordinal": 5,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        null,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT\n        c.id, c.id_parent, c.id_request, c.content,\n        (u.image, u.name, u.username) as \"user!: User\",\n        parent.owner as \"replying_to: Option<String>\"\n        FROM Comment c\n        INNER JOIN Account u\n        ON c.owner = u.username\n        LEFT OUTER JOIN Comment parent\n        ON c.id_parent = parent.id\n        WHERE c.id_request = $1\n        ORDER BY id"
   }
 }
