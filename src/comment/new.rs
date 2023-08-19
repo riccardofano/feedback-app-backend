@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use validator::Validate;
 
 use crate::{
-    schema::{Comment, CommentWithReplies, CommentWithUser, User},
+    schema::{fetch_user, Comment, CommentWithReplies, CommentWithUser},
     Context,
 };
 use crate::{validation::ValidatedForm, Result};
@@ -39,23 +39,25 @@ async fn insert_comment(
     id_request: i32,
     form: CreateCommentForm,
 ) -> anyhow::Result<Option<CommentWithReplies>> {
-    let user = sqlx::query_as!(
-        User,
-        "SELECT * FROM Account WHERE username = $1",
-        form.username
-    )
-    .fetch_optional(pool)
-    .await?;
-
-    let Some(user) = user else {
+    let user = fetch_user(pool, &form.username).await?;
+    let Some(user ) = user else {
         return Ok(None);
     };
 
     let comment = sqlx::query_as!(
         Comment,
-        r#"INSERT INTO Comment (id_request, id_parent, owner, content)
-        VALUES ($1, NULL, $2, $3)
-        RETURNING *"#,
+        r#"
+        WITH new_comment AS (
+            INSERT INTO Comment (id_request, id_parent, owner, content)
+            VALUES ($1, NULL, $2, $3)
+            RETURNING *
+        )
+        SELECT
+            n.id, n.id_parent, n.id_request, n.owner, n.content,
+            parent.owner as replying_to
+        FROM new_comment n
+        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id
+        "#,
         id_request,
         form.username,
         form.content
@@ -66,8 +68,9 @@ async fn insert_comment(
     let complete_comment = CommentWithUser {
         id: comment.id,
         id_parent: comment.id_parent,
-        id_request: comment.id_request,
+        id_request,
         content: comment.content,
+        replying_to: comment.replying_to,
         user,
     };
 

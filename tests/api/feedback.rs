@@ -311,13 +311,16 @@ async fn post_feedback_reply() {
 
     assert_eq!(complete_feedback.feedback.id, json.id);
     assert_eq!(complete_feedback.comments.len(), 1);
+
     assert_eq!(complete_feedback.comments[0].id, comment_json.id);
+    assert_eq!(complete_feedback.comments[0].replying_to, None);
     assert_eq!(complete_feedback.comments[0].replies.len(), 1);
+
     assert_eq!(complete_feedback.comments[0].replies[0].id, reply_json.id);
-    assert_eq!(
-        complete_feedback.comments[0].replies[0].content,
-        reply_json.content
-    );
+    #[rustfmt::skip]
+    assert_eq!( complete_feedback.comments[0].replies[0].content, reply_json.content);
+    #[rustfmt::skip]
+    assert_eq!(complete_feedback.comments[0].replies[0].replying_to, Some("velvetround".into()));
 }
 
 #[tokio::test]
@@ -404,4 +407,6 @@ async fn comment_has_user_information() {
     assert!(string.contains(r#""image":"/image-zena.jpg""#));
     assert!(string.contains(r#""name":"Zena Kelley""#));
     assert!(string.contains(r#""username":"velvetround""#));
+
+    assert!(string.contains(r#""replyingTo":null"#))
 }

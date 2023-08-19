@@ -44,12 +44,14 @@ pub struct UpvoteUpdate {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: i32,
     pub id_request: i32,
     pub id_parent: Option<i32>,
     pub user: User,
     pub content: String,
+    pub replying_to: Option<String>,
     pub replies: Vec<Comment>,
 }
 

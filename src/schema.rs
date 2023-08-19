@@ -22,20 +22,24 @@ pub struct RequestWithComments {
 }
 
 #[derive(Debug, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: i32,
     pub id_request: i32,
     pub id_parent: Option<i32>,
     pub content: String,
     pub owner: String,
+    pub replying_to: Option<String>,
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CommentWithUser {
     pub id: i32,
-    pub id_parent: Option<i32>,
     pub id_request: i32,
+    pub id_parent: Option<i32>,
     pub content: String,
+    pub replying_to: Option<String>,
     pub user: User,
 }
 
@@ -84,11 +88,14 @@ pub async fn fetch_request_with_comments(
         // NOTE: You can't use `u.*`, you have to specify the names explicitely
         r#"SELECT
         c.id, c.id_parent, c.id_request, c.content,
-        (u.image, u.name, u.username) as "user!: User"
+        (u.image, u.name, u.username) as "user!: User",
+        parent.owner as "replying_to: Option<String>"
         FROM Comment c
         INNER JOIN Account u
         ON c.owner = u.username
-        WHERE id_request = $1
+        LEFT OUTER JOIN Comment parent
+        ON c.id_parent = parent.id
+        WHERE c.id_request = $1
         ORDER BY id"#,
         id_request
     )
@@ -117,4 +124,12 @@ pub async fn fetch_request_with_comments(
         request,
         comments: base_comments.into_iter().rev().collect(),
     }))
+}
+
+pub async fn fetch_user(pool: &PgPool, username: &str) -> anyhow::Result<Option<User>> {
+    let user = sqlx::query_as!(User, "SELECT * FROM Account WHERE username = $1", username)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(user)
 }
