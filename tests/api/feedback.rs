@@ -7,6 +7,7 @@ use crate::{
 };
 use axum::{body::Body, http::StatusCode, Router};
 use hyper::Response;
+use serde_json::json;
 use tower::{Service, ServiceExt};
 
 #[tokio::test]
@@ -397,16 +398,19 @@ async fn comment_has_user_information() {
     };
     let response = create_base_comment(&mut app, &comment, json.id).await;
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    let string = String::from_utf8(body.to_vec()).unwrap();
+    let comment_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
-    dbg!(&string);
+    // NOTE: I just realized you can use serde_json::Value to generate a json
+    // object, I should maybe use that instead of making the rust structs so I
+    // can compile the code when I change even when I change fields to make a
+    // failing test
 
-    // NOTE: I'm searching the string because otherwise I'd have to modify the
-    // Comment struct first before writing a failing test
-    assert!(string.contains(r#""user":{"#));
-    assert!(string.contains(r#""image":"/image-zena.jpg""#));
-    assert!(string.contains(r#""name":"Zena Kelley""#));
-    assert!(string.contains(r#""username":"velvetround""#));
+    assert!(comment_json.get("user").is_some());
 
-    assert!(string.contains(r#""replyingTo":null"#))
+    let user = comment_json.get("user").unwrap();
+    assert_eq!(user["name"], json!("Zena Kelley"));
+    assert_eq!(user["username"], json!("velvetround"));
+    assert_eq!(user["image"], json!("/image-zena.jpg"));
+
+    assert_eq!(comment_json["replyingTo"], json!(()));
 }
