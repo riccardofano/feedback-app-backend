@@ -195,7 +195,7 @@
     },
     "query": "UPDATE Request SET title = $1, category = $2, status = $3, description = $4 WHERE id = $5 RETURNING *"
   },
-  "88f6ded9dda6c3ac3e817d55a274275b143604049fe59bffcc664865609f426a": {
+  "9353be2945b041cb925ec0679e00f893ddc6653a7f5e4ae9b4f62b6abcf9817c": {
     "describe": {
       "columns": [
         {
@@ -217,7 +217,7 @@
         "Left": []
       }
     },
-    "query": "SELECT\n            (r.id, r.title, r.category, r.upvotes, r.upvoted, r.status, r.description) as \"request!: Request\",\n            COUNT(c.*) as \"comment_amount!: i64\"\n        FROM Request r\n        JOIN Comment c ON r.id = c.id_request\n        GROUP BY r.id\n        "
+    "query": "SELECT\n            (r.id, r.title, r.category, r.upvotes, r.upvoted, r.status, r.description) as \"request!: Request\",\n            COUNT(c.*) as \"comment_amount!: i64\"\n        FROM Request r\n        LEFT JOIN Comment c ON r.id = c.id_request\n        GROUP BY r.id\n        "
   },
   "94ddca1423ca2061609f8cb9137cb2fbe9fec9b17f073b077c74cf67da6be668": {
     "describe": {

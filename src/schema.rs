@@ -72,7 +72,7 @@ pub async fn fetch_all_requests(pool: &PgPool) -> anyhow::Result<Vec<RequestComm
             (r.id, r.title, r.category, r.upvotes, r.upvoted, r.status, r.description) as "request!: Request",
             COUNT(c.*) as "comment_amount!: i64"
         FROM Request r
-        JOIN Comment c ON r.id = c.id_request
+        LEFT JOIN Comment c ON r.id = c.id_request
         GROUP BY r.id
         "#
     )
