@@ -1,4 +1,4 @@
-INSERT INTO Account (username, name, image) VALUES
+INSERT INTO Account (username, image, name) VALUES
     ('brawnybrave', '/image-thomas.jpg', 'Thomas Hood'),
     ('hexagon.bestagon', '/image-elijah.jpg', 'Elijah Moss'),
     ('annev1990', '/image-anne.jpg', 'Anne Valentine'),
