@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use sqlx::{FromRow, PgPool};
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize, sqlx::Type)]
 pub struct Request {
     pub id: i32,
     pub title: String,
@@ -12,6 +12,14 @@ pub struct Request {
     pub upvoted: bool,
     pub status: String,
     pub description: String,
+}
+
+#[derive(Debug, FromRow, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestCommentAmount {
+    #[serde(flatten)]
+    pub request: Request,
+    pub comment_amount: i64,
 }
 
 #[derive(Serialize)]
@@ -57,10 +65,19 @@ pub struct User {
     pub username: String,
 }
 
-pub async fn fetch_all_requests(pool: &PgPool) -> anyhow::Result<Vec<Request>> {
-    let rows = sqlx::query_as!(Request, "SELECT * FROM Request")
-        .fetch_all(pool)
-        .await?;
+pub async fn fetch_all_requests(pool: &PgPool) -> anyhow::Result<Vec<RequestCommentAmount>> {
+    let rows = sqlx::query_as!(
+        RequestCommentAmount,
+        r#"SELECT
+            (r.id, r.title, r.category, r.upvotes, r.upvoted, r.status, r.description) as "request!: Request",
+            COUNT(c.*) as "comment_amount!: i64"
+        FROM Request r
+        JOIN Comment c ON r.id = c.id_request
+        GROUP BY r.id
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
 
     Ok(rows)
 }

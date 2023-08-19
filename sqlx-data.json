@@ -79,60 +79,6 @@
     },
     "query": "WITH new_comment AS (\n            INSERT INTO Comment (id_request, id_parent, owner, content)\n            VALUES ($1, $2, $3, $4)\n            RETURNING *\n        )\n        SELECT\n            n.id, n.id_parent, n.id_request, n.owner, n.content,\n            parent.owner as replying_to\n        FROM new_comment n\n        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id"
   },
-  "306e4ce0ee0c8131f9cbf2505bf5b1abb3fd7ac44dc53ffe84b3ef2cc89ccd7a": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "title",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "category",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "upvotes",
-          "ordinal": 3,
-          "type_info": "Int4"
-        },
-        {
-          "name": "upvoted",
-          "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "status",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 6,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT * FROM Request"
-  },
   "58881637733442ff75e3f861b610b8edfc086b7aa370427ae5572acef887c119": {
     "describe": {
       "columns": [
@@ -248,6 +194,30 @@
       }
     },
     "query": "UPDATE Request SET title = $1, category = $2, status = $3, description = $4 WHERE id = $5 RETURNING *"
+  },
+  "88f6ded9dda6c3ac3e817d55a274275b143604049fe59bffcc664865609f426a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "request!: Request",
+          "ordinal": 0,
+          "type_info": "Record"
+        },
+        {
+          "name": "comment_amount!: i64",
+          "ordinal": 1,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT\n            (r.id, r.title, r.category, r.upvotes, r.upvoted, r.status, r.description) as \"request!: Request\",\n            COUNT(c.*) as \"comment_amount!: i64\"\n        FROM Request r\n        JOIN Comment c ON r.id = c.id_request\n        GROUP BY r.id\n        "
   },
   "94ddca1423ca2061609f8cb9137cb2fbe9fec9b17f073b077c74cf67da6be668": {
     "describe": {
