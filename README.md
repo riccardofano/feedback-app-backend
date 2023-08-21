@@ -15,8 +15,24 @@ Install [cargo-shuttle](https://github.com/shuttle-hq/shuttle) using cargo.
 $ cargo install cargo-shuttle
 ```
 
-Run the development server with shuttle
+Running the development server with shuttle:
 
 ```
+$ docker docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 --name postgres postgres
 $ cargo shuttle run
+```
+
+Running tests:
+
+```
+$ docker docker run -e POSTGRES_PASSWORD=postgres -p 5432:5432 --name postgres postgres
+$ SQLX_OFFLINE=true cargo t
+```
+
+Deploying to shuttle:  
+_Make sure to add `--no-test` otherwise the tests will fail on the production server and the deployment will crash_
+
+```
+$ cargo shuttle login
+$ cargo shuttle deploy --no-test
 ```
