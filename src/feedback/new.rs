@@ -10,7 +10,6 @@ pub struct NewFeedbackForm {
     #[validate(length(min = 3))]
     title: String,
     category: String,
-    status: String,
     #[validate(length(min = 10))]
     description: String,
 }
@@ -30,7 +29,7 @@ async fn insert_feedback(pool: &PgPool, form: NewFeedbackForm) -> anyhow::Result
         "INSERT INTO Request (title, category, status, description) VALUES ($1, $2, $3, $4) RETURNING *",
         form.title,
         form.category,
-        form.status,
+        "suggestion",
         form.description
     )
     .fetch_one(pool)

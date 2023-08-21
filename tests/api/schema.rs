@@ -19,22 +19,28 @@ pub struct FeedbackWithComments {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct FeedbackForm {
+pub struct NewFeedbackForm {
     pub title: String,
     pub category: String,
-    pub status: String,
     pub description: String,
 }
 
-impl Default for FeedbackForm {
+impl Default for NewFeedbackForm {
     fn default() -> Self {
         Self {
             title: String::from("New feedback"),
             category: String::from("bug"),
-            status: String::from("planned"),
             description: String::from("Some description"),
         }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct EditFeedbackForm {
+    pub title: String,
+    pub category: String,
+    pub status: String,
+    pub description: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

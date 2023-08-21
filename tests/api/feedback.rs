@@ -3,7 +3,10 @@ use crate::{
         create_app, get_request, is_application_json, parse_response_body, patch_request,
         post_request,
     },
-    schema::{Comment, CommentForm, Feedback, FeedbackForm, FeedbackWithComments, UpvoteUpdate},
+    schema::{
+        Comment, CommentForm, EditFeedbackForm, Feedback, FeedbackWithComments, NewFeedbackForm,
+        UpvoteUpdate,
+    },
 };
 use axum::{body::Body, http::StatusCode, Router};
 use hyper::Response;
@@ -47,7 +50,7 @@ async fn get_non_existant_feedback() {
 
 async fn create_feedback_response(
     app: &mut Router,
-    form: &FeedbackForm,
+    form: &NewFeedbackForm,
 ) -> Response<http_body::combinators::UnsyncBoxBody<axum::body::Bytes, axum::Error>> {
     let encoded_form = serde_urlencoded::to_string(form).unwrap();
     let request = post_request("/feedback/new", encoded_form.into()).await;
@@ -72,7 +75,7 @@ async fn create_base_comment(
 async fn post_new_feedback() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
 
     assert_eq!(response.status(), StatusCode::CREATED);
@@ -82,7 +85,7 @@ async fn post_new_feedback() {
 
     assert_eq!(json.title, form.title);
     assert_eq!(json.category, form.category);
-    assert_eq!(json.status, form.status);
+    assert_eq!(json.status, "suggestion");
     assert_eq!(json.description, form.description);
 }
 
@@ -97,15 +100,6 @@ async fn post_new_feedback_with_missing_data() {
         response.status(),
         StatusCode::BAD_REQUEST,
         "expected to be missing title"
-    );
-
-    let encoded_form = "title=New%20feedback&category=bug&description=Some%20description";
-    let request = post_request("/feedback/new", encoded_form.into()).await;
-    let response = app.call(request).await.unwrap();
-    assert_eq!(
-        response.status(),
-        StatusCode::BAD_REQUEST,
-        "expected to be missing status"
     );
 
     let encoded_form = "title=New%20feedback&status=planned&description=Some%20description";
@@ -131,16 +125,16 @@ async fn post_new_feedback_with_missing_data() {
 async fn edit_feedback() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
     assert_eq!(json.title, form.title);
     assert_eq!(json.category, form.category);
-    assert_eq!(json.status, form.status);
+    assert_eq!(json.status, "suggestion");
     assert_eq!(json.description, form.description);
 
-    let edited_form = FeedbackForm {
+    let edited_form = EditFeedbackForm {
         title: "Edited title".into(),
         category: "feature".into(),
         status: "in-progress".into(),
@@ -166,7 +160,7 @@ async fn edit_feedback() {
 async fn upvote_unupvote_feedback() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
@@ -195,7 +189,7 @@ async fn upvote_unupvote_feedback() {
 async fn post_feedback_comment() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
@@ -237,7 +231,7 @@ async fn post_feedback_comment() {
 async fn post_feedback_comment_with_missing_fields() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
@@ -273,7 +267,7 @@ async fn post_feedback_comment_with_missing_fields() {
 async fn post_feedback_reply() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
@@ -328,7 +322,7 @@ async fn post_feedback_reply() {
 async fn post_feedback_reply_nested() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
@@ -388,7 +382,7 @@ async fn post_feedback_reply_nested() {
 async fn comment_has_user_information() {
     let mut app = create_app().await;
 
-    let form = FeedbackForm::default();
+    let form = NewFeedbackForm::default();
     let response = create_feedback_response(&mut app, &form).await;
     let json: Feedback = parse_response_body(response).await;
 
