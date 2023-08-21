@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use sqlx::{FromRow, PgPool};
+use sqlx::PgPool;
 
-#[derive(Debug, FromRow, Serialize, sqlx::Type)]
+#[derive(Debug, Serialize, sqlx::Type)]
 pub struct Request {
     pub id: i32,
     pub title: String,
@@ -14,7 +14,7 @@ pub struct Request {
     pub description: String,
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestCommentAmount {
     #[serde(flatten)]
@@ -22,14 +22,14 @@ pub struct RequestCommentAmount {
     pub comment_amount: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct RequestWithComments {
     #[serde(flatten)]
     pub request: Request,
     pub comments: Vec<CommentWithReplies>,
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: i32,
@@ -40,7 +40,7 @@ pub struct Comment {
     pub replying_to: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommentWithUser {
     pub id: i32,
@@ -51,7 +51,7 @@ pub struct CommentWithUser {
     pub user: User,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct CommentWithReplies {
     #[serde(flatten)]
     pub comment: CommentWithUser,

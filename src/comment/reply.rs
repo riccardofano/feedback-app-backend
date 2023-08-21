@@ -42,28 +42,35 @@ async fn insert_reply(
 ) -> anyhow::Result<Option<CommentWithReplies>> {
     let user = fetch_user(pool, &form.username).await?;
     let Some(user) = user else {
-        return Ok(None)
+        return Ok(None);
     };
 
     let comment = sqlx::query_as!(
         Comment,
-        r#"WITH new_comment AS (
-            INSERT INTO Comment (id_request, id_parent, owner, content)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-        )
-        SELECT
-            n.id, n.id_parent, n.id_request, n.owner, n.content,
-            parent.owner as replying_to
-        FROM new_comment n
-        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id"#,
+        r#"INSERT INTO COMMENT (id_request, id_parent, owner, content)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *, NULL as replying_to"#,
         id_request,
         id_parent,
         form.username,
         form.content
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
+
+    let Some(comment) = comment else {
+        return Ok(None);
+    };
+
+    let comment = sqlx::query_as!(
+        Comment,
+        r#"SELECT c.id, c.id_request, c.id_parent, c.owner, c.content, parent.owner as "replying_to?"
+        FROM Comment c
+        LEFT JOIN Comment parent
+        ON c.id_parent = parent.id
+        WHERE c.id = $1"#,
+        comment.id
+    ).fetch_one(pool).await?;
 
     let complete_comment = CommentWithUser {
         id: comment.id,

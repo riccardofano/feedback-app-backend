@@ -46,18 +46,9 @@ async fn insert_comment(
 
     let comment = sqlx::query_as!(
         Comment,
-        r#"
-        WITH new_comment AS (
-            INSERT INTO Comment (id_request, id_parent, owner, content)
-            VALUES ($1, NULL, $2, $3)
-            RETURNING *
-        )
-        SELECT
-            n.id, n.id_parent, n.id_request, n.owner, n.content,
-            parent.owner as replying_to
-        FROM new_comment n
-        LEFT OUTER JOIN Comment parent ON n.id_parent = parent.id
-        "#,
+        r#"INSERT INTO Comment (id_request, id_parent, owner, content)
+        VALUES ($1, NULL, $2, $3)
+        RETURNING *, NULL as replying_to"#,
         id_request,
         form.username,
         form.content
