@@ -10,7 +10,7 @@ use crate::{
 };
 use axum::{body::Body, http::StatusCode, Router};
 use hyper::Response;
-use serde_json::json;
+use serde_json::{json, Value};
 use tower::{Service, ServiceExt};
 
 #[tokio::test]
@@ -407,4 +407,28 @@ async fn comment_has_user_information() {
     assert_eq!(user["image"], json!("/image-zena.jpg"));
 
     assert_eq!(comment_json["replyingTo"], json!(()));
+}
+
+#[tokio::test]
+async fn get_all_feedbacks() {
+    let mut app = create_app().await;
+
+    let request = get_request("/feedback/all", Body::empty()).await;
+    let json: Value = parse_response_body(app.call(request).await.unwrap()).await;
+
+    assert!(json["currentUser"].is_string());
+    assert!(json["productRequests"].is_array());
+
+    let feedback = &json["productRequests"];
+
+    // NOTE: This assumes theres's some data in the database, which is fine for
+    // now since it's seeded
+    assert!(feedback[0]["id"].is_number());
+    assert!(feedback[0]["title"].is_string());
+    assert!(feedback[0]["category"].is_string());
+    assert!(feedback[0]["upvotes"].is_number());
+    assert!(feedback[0]["upvoted"].is_boolean());
+    assert!(feedback[0]["status"].is_string());
+    assert!(feedback[0]["description"].is_string());
+    assert!(feedback[0]["commentAmount"].is_number());
 }
